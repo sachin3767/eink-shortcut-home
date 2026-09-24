@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.MP01Home" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- No window animations: eInk panels ghost badly on transitions. -->
+    <style name="Theme.MP01Home.NoAnim" parent="Theme.MP01Home">
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+</resources>
