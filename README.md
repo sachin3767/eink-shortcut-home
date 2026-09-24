@@ -50,3 +50,7 @@ To make it the default home screen, open the app and long-press empty space to r
 ## Weather setup
 
 Get a free API key at [openweathermap.org/api](https://openweathermap.org/api), then enter it along with your city name under **Settings → Weather**.
+
+## Roadmap
+
+See [docs/SPEC.md](docs/SPEC.md) for the feature spec and build status tracker.
