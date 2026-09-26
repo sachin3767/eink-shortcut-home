@@ -181,7 +181,7 @@ distraction.
 | CORE-1 | DONE | `app/src/main/AndroidManifest.xml:25-30`; `.../ui/settings/SettingsScreen.kt:153-155` | HOME/DEFAULT intent filter + `RoleManager.ROLE_HOME` request |
 | CORE-2 | PARTIAL | `.../ui/components/HeaderInfo.kt` | Minute-resolution time + full date shown; no battery % |
 | CORE-3 | PARTIAL | `.../data/settings/SettingsModels.kt:38` (`MAX_HOME_APPS = 8`) | Built as an 8-slot, no-default, any-app list, not a 4–6 item dock defaulting to Calendar/Tasks/Gmail/Keep — revisit once those integrations exist |
-| CORE-4 | PARTIAL | `.../ui/drawer/AppDrawerScreen.kt:46` (`LazyColumn`); `.../ui/home/HomeScreen.kt:58` (swipe-up) | Text-only A–Z list, opened by swipe-up; scrolling rather than paged, and no search box — near-term follow-up |
+| CORE-4 | PARTIAL | `.../ui/drawer/AppDrawerScreen.kt` (search `OutlinedTextField` + physical-keyboard type-to-search + Enter-to-launch); `.../ui/home/HomeScreen.kt:58` (swipe-up) | Text-only A–Z list, opened by swipe-up, with search box and keyboard type-ahead now implemented; still scrolling rather than paged (out of scope per this repo owner's decision) |
 | CORE-5 | TODO | | Drawer always lists every launchable app; no hide option |
 | CORE-6 | PARTIAL | `.../ui/home/HomeScreen.kt:55,58` | Swipe-up → drawer and long-press → remove/settings work; no swipe-down capture, no double-tap refresh, nothing is user-configurable |
 | CORE-7 | TODO | | No export/import of settings/layout |
