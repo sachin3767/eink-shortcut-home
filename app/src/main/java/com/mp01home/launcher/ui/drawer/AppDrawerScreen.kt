@@ -2,6 +2,7 @@ package com.mp01home.launcher.ui.drawer
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +32,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -78,6 +88,16 @@ fun AppDrawerScreen(
     }
 
     val results = remember(uiState.apps, query) { DrawerPaging.search(uiState.apps, query) { it.label } }
+
+    fun launchFirstResult() {
+        results.firstOrNull()?.let { viewModel.launchApp(it.packageName) }
+    }
+
+    // Hardware-keyboard type-ahead (MP01 has a physical keyboard): typing anywhere in the drawer
+    // feeds the search box; Enter launches the top result.
+    val rootFocusRequester = remember { FocusRequester() }
+    val searchFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { rootFocusRequester.requestFocus() }
     val dimens = EinkTheme.dimens
     val rowStyle = MaterialTheme.typography.bodyLarge
     val rowHeight: Dp = with(LocalDensity.current) {
@@ -90,6 +110,29 @@ fun AppDrawerScreen(
             .background(Color.White)
             .systemBarsPadding()
             .padding(dimens.gutter)
+            .focusRequester(rootFocusRequester)
+            .focusable()
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (event.key) {
+                    Key.Enter, Key.NumPadEnter -> {
+                        launchFirstResult()
+                        true
+                    }
+                    else -> {
+                        val typed = event.nativeKeyEvent.unicodeChar
+                        if (typed > 0 && !Character.isISOControl(typed)) {
+                            query += typed.toChar()
+                            requestedPage = 0
+                            showIndex = false
+                            searchFocusRequester.requestFocus()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                }
+            }
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -116,12 +159,21 @@ fun AppDrawerScreen(
             placeholder = { Text("Search apps") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = {
-                results.firstOrNull()?.let { viewModel.launchApp(it.packageName) }
-            }),
+            keyboardActions = KeyboardActions(onGo = { launchFirstResult() }),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = dimens.rowPadding)
+                .focusRequester(searchFocusRequester)
+                .onKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown &&
+                        (event.key == Key.Enter || event.key == Key.NumPadEnter)
+                    ) {
+                        launchFirstResult()
+                        true
+                    } else {
+                        false
+                    }
+                }
         )
         HorizontalDivider(color = Color.Black)
 
