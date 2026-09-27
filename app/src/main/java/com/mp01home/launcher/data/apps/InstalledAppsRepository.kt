@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** Launch apps through [AppLauncher] (it applies the DIS-1 friction gate), not from here. */
 class InstalledAppsRepository(private val context: Context) {
 
     private val packageManager: PackageManager get() = context.packageManager
@@ -26,12 +27,6 @@ class InstalledAppsRepository(private val context: Context) {
             }
             .sortedBy { it.label.lowercase() }
             .toList()
-    }
-
-    fun launchApp(packageName: String) {
-        val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(launchIntent)
     }
 
     suspend fun resolveLabel(packageName: String): String? = withContext(Dispatchers.IO) {

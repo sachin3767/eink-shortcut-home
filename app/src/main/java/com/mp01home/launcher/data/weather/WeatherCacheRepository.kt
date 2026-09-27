@@ -21,6 +21,7 @@ class WeatherCacheRepository(private val context: Context) {
         val CONDITION = stringPreferencesKey("condition")
         val UNITS_SYMBOL = stringPreferencesKey("units_symbol")
         val FETCHED_AT = longPreferencesKey("fetched_at")
+        val RAIN_CHANCE = intPreferencesKey("rain_chance")
     }
 
     val cachedSnapshot: Flow<WeatherSnapshot?> = context.weatherCacheStore.data.map { prefs ->
@@ -30,12 +31,19 @@ class WeatherCacheRepository(private val context: Context) {
             tempRounded = prefs[Keys.TEMP] ?: return@map null,
             condition = prefs[Keys.CONDITION] ?: "",
             unitsSymbol = prefs[Keys.UNITS_SYMBOL] ?: "",
-            fetchedAtEpochMillis = fetchedAt
+            fetchedAtEpochMillis = fetchedAt,
+            rainChancePercent = prefs[Keys.RAIN_CHANCE]
         )
     }
 
     suspend fun save(snapshot: WeatherSnapshot) {
         context.weatherCacheStore.edit { prefs ->
+            val rain = snapshot.rainChancePercent
+            if (rain != null) {
+                prefs[Keys.RAIN_CHANCE] = rain
+            } else {
+                prefs.remove(Keys.RAIN_CHANCE)
+            }
             prefs[Keys.CITY] = snapshot.city
             prefs[Keys.TEMP] = snapshot.tempRounded
             prefs[Keys.CONDITION] = snapshot.condition

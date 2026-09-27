@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MP01 Home</string>
+    <string name="notification_listener_label">MP01 Home mail &amp; digest</string>
 </resources>

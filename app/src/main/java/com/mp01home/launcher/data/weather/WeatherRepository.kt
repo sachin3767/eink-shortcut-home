@@ -10,14 +10,19 @@ import java.io.IOException
 import java.net.URLEncoder
 
 /**
- * Thin client for OpenWeatherMap's "current weather by city name" endpoint.
- * No background polling: callers decide when a refresh is due (see [isStale]).
+ * Thin client for OpenWeatherMap (EXT-1; OWM is used instead of Open-Meteo, see SPEC §10):
+ * - "current weather by city name" for temperature + condition;
+ * - "5 day / 3 hour forecast" (first [FORECAST_SLOTS] slots ≈ next 6 hours) for rain chance.
+ *
+ * No polling here: [WeatherSyncable] decides when a refresh is due (see [isStale]).
  */
 class WeatherRepository(
     private val client: OkHttpClient = OkHttpClient()
 ) {
     companion object {
         private const val BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+        private const val FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+        private const val FORECAST_SLOTS = 2
         val CACHE_TTL_MILLIS = 45 * 60 * 1000L
     }
 
@@ -33,9 +38,8 @@ class WeatherRepository(
             return@withContext WeatherResult.Error("Set a city and API key in Settings")
         }
 
-        val url = "$BASE_URL?q=${URLEncoder.encode(city, "UTF-8")}" +
-            "&appid=$apiKey&units=${units.apiValue}"
-        val request = Request.Builder().url(url).build()
+        val query = "q=${URLEncoder.encode(city, "UTF-8")}&appid=$apiKey&units=${units.apiValue}"
+        val request = Request.Builder().url("$BASE_URL?$query").build()
 
         try {
             client.newCall(request).execute().use { response ->
@@ -59,12 +63,29 @@ class WeatherRepository(
                         tempRounded = Math.round(main.getDouble("temp")).toInt(),
                         condition = condition,
                         unitsSymbol = units.symbol,
-                        fetchedAtEpochMillis = System.currentTimeMillis()
+                        fetchedAtEpochMillis = System.currentTimeMillis(),
+                        rainChancePercent = fetchRainChancePercent(query)
                     )
                 )
             }
         } catch (e: IOException) {
             WeatherResult.Error("Network error: ${e.message ?: "unreachable"}")
+        } catch (e: org.json.JSONException) {
+            WeatherResult.Error("Unexpected weather response")
         }
     }
+
+    /** Max "pop" (probability of precipitation) over the next forecast slots; null on any failure. */
+    private fun fetchRainChancePercent(query: String): Int? = runCatching {
+        val request = Request.Builder().url("$FORECAST_URL?$query&cnt=$FORECAST_SLOTS").build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return@use null
+            val list = JSONObject(response.body?.string().orEmpty()).getJSONArray("list")
+            var maxPop = -1.0
+            for (i in 0 until list.length()) {
+                maxPop = maxOf(maxPop, list.getJSONObject(i).optDouble("pop", -1.0))
+            }
+            if (maxPop < 0) null else Math.round(maxPop * 100).toInt().coerceIn(0, 100)
+        }
+    }.getOrNull()
 }
