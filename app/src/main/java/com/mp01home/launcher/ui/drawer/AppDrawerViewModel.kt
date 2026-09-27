@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 data class AppDrawerUiState(
     val apps: List<AppInfo> = emptyList(),
     val homeApps: List<String> = emptyList(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val searchQuery: String = ""
 )
 
 class AppDrawerViewModel(application: Application) : AndroidViewModel(application) {
@@ -48,5 +49,9 @@ class AppDrawerViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun removeFromHome(packageName: String) {
         viewModelScope.launch { settingsRepository.removeHomeApp(packageName) }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
     }
 }
